@@ -1,0 +1,17 @@
+{
+  "name": "@devlog/storage-sqlite",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "SQLite-Adapter für die Repository-Ports von @devlog/core – unabhängig vom konkreten SQLite-Treiber.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@devlog/core": "*"
+  }
+}

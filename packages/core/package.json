@@ -5,7 +5,8 @@
   "type": "module",
   "description": "Fachlogik von DevLog – reines TypeScript, ohne Framework- oder Plattformabhängigkeiten.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./testing": "./src/testing/repository-contract.ts"
   },
   "scripts": {
     "test": "vitest run",

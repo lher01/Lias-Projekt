@@ -12,12 +12,33 @@ npm test           # alle Tests
 npm run typecheck  # TypeScript prüfen
 ```
 
+### Desktop-App starten
+
+**Im Browser (ohne Rust, Demo-Daten im Speicher)**: ideal, um an der Oberfläche zu arbeiten:
+
+```powershell
+npm run dev -w @devlog/desktop
+```
+
+Dann http://localhost:1420 öffnen.
+
+**Als echte Desktop-App (Tauri, Daten in SQLite)**: braucht einmalig die Rust-Toolchain
+von https://rustup.rs (inklusive „Visual Studio C++ Build Tools“):
+
+```powershell
+npm run tauri dev -w @devlog/desktop
+```
+
+Der erste Start kompiliert die Rust-Abhängigkeiten und dauert einige Minuten. Die Datenbank liegt danach unter
+`%APPDATA%\dev.devlog.desktop\devlog.db`.
+
 ## Fahrplan
 
 | Phase | Inhalt | Status |
 |---|---|---|
 | 1a | `@devlog/core`: Domain, Ports, Use Cases, Tests | ✅ |
-| 1b | `apps/desktop`: Tauri + React, SQLite-Adapter | ⏳ als Nächstes |
+| 1b | `@devlog/storage-sqlite` + `apps/desktop`: Tauri + React | ✅ (Tauri-Start mit Rust noch zu prüfen) |
+| 1c | Markdown-Vorschau, Volltextsuche (FTS5), Statistik-Kalender | ⏳ als Nächstes |
 | 2 | `apps/sync-server` + `@devlog/sync`: Email-Login (Magic Link), verschlüsselter Abgleich | |
 | 3 | `apps/mobile`: Tauri Mobile, nutzt `core` und `sync` wieder | |
 | 4 | Extras: Git-Commits importieren, Statistiken, Serien | |
@@ -29,13 +50,13 @@ npm run typecheck  # TypeScript prüfen
 ```
 devlog/
 ├── packages/
-│   ├── core/          Fachlogik, reines TypeScript        ← existiert
-│   ├── storage-sqlite Adapter für SQLite (Desktop/Handy)
-│   ├── sync/          Sync-Protokoll, Konflikte, Verschlüsselung
-│   └── ui/            Gemeinsame React-Komponenten
+│   ├── core/            Fachlogik, reines TypeScript            ✅
+│   ├── storage-sqlite/  SQLite-Adapter (treiberunabhängig)      ✅
+│   ├── sync/            Sync-Protokoll, Konflikte, Verschlüsselung
+│   └── ui/              Gemeinsame React-Komponenten
 └── apps/
-    ├── desktop/       Tauri + React
-    ├── mobile/        Tauri Mobile
+    ├── desktop/         Tauri + React                           ✅
+    ├── mobile/          Tauri Mobile
     └── sync-server/   Node: Login + Speicher für verschlüsselte Daten
 ```
 
@@ -74,7 +95,33 @@ auf Desktop, Handy und (für Prüfungen) auf dem Server.
 | **`updatedAt` + `changedSince()`** | Grundlage für den Delta-Sync: „Schick mir alles seit meinem letzten Abgleich.“ |
 | **`EntryQuery` als Objekt** | Beschreibt *was* gesucht wird. SQLite kann es in SQL mit Volltextsuche übersetzen. |
 
+### Adapter austauschbar machen: Contract-Tests
+
+`@devlog/core/testing` enthält eine Testsuite, die **jede** Repository-Implementierung
+bestehen muss. In-Memory (`packages/core/test`) und SQLite (`packages/storage-sqlite/test`)
+rufen dieselbe Suite auf. Ein Interface legt nur Signaturen fest, der Contract legt das *Verhalten* fest.
+
+### Speicher-Schicht (`@devlog/storage-sqlite`)
+
+```
+SqliteEntryRepository ──▶ SqlDriver (Interface) ◀── Tauri-Plugin-SQL   (App)
+                                                ◀── node:sqlite        (Tests)
+```
+
+- **Migrationen** stehen in TypeScript, die Version in `PRAGMA user_version`. Regel: Bestehende Migrationen nie ändern, nur neue anhängen.
+- **Kein Foreign Key** von `entries.project_id` auf `projects`: Beim Sync kann ein Eintrag vor seinem Projekt ankommen.
+- **Tags als JSON-Spalte**: Die Tag-Suche nutzt `json_each()`. Eine eigene Tabelle lohnt sich erst, wenn Tags umbenannt werden sollen.
+
+### Composition Root (`apps/desktop/src/infrastructure/services.ts`)
+
+Die einzige Stelle, die konkrete Adapter auswählt: SQLite in Tauri, In-Memory mit Demo-Daten im Browser.
+Die React-Komponenten kennen nur den `DevlogService`.
+
 ### Offene Architektur-Themen (für später)
+
+- **Volltextsuche:** `LIKE` und `lower()` kennen in SQLite nur ASCII. Deshalb ist die Suche bei „Ä“ und „ä“
+  noch nicht einheitlich. Lösung: FTS5-Index mit `unicode61`-Tokenizer.
+- **Content Security Policy:** steht in `tauri.conf.json` vorerst auf `null` und wird gehärtet, bevor die App verteilt wird.
 
 - **Konflikte:** Zunächst *Last-Write-Wins* pro Eintrag anhand von `updatedAt`.
   Problem: Die Uhren der Geräte können abweichen. Lösung: *Hybrid Logical Clocks* (Phase 2).
