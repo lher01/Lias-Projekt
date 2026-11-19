@@ -1,0 +1,8 @@
+node_modules/
+dist/
+coverage/
+*.log
+.DS_Store
+
+# Tauri / Rust (kommt in Phase 1b)
+target/
