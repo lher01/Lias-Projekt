@@ -7,7 +7,7 @@ import {
   type Project,
   type ProjectId,
 } from "@devlog/core";
-import { MagnifyingGlassIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
+import { MagnifyingGlassIcon, NotePencilIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AppServices } from "../infrastructure/services";
 import { EntryEditor } from "./EntryEditor";
@@ -15,7 +15,8 @@ import { EntryList } from "./EntryList";
 import { formatShortDate, nextDay } from "./format";
 import { Heatmap } from "./Heatmap";
 import { useMediaQuery, useTheme } from "./hooks";
-import { Sidebar } from "./Sidebar";
+import { MobileMenu } from "./MobileMenu";
+import { Sidebar, type NavigationProps } from "./Sidebar";
 import { StatCards } from "./StatCards";
 
 export interface Filter {
@@ -28,6 +29,8 @@ export interface Filter {
 
 /** Ab dieser Breite steht das Formular dauerhaft rechts (wie in DevTrack). */
 const WIDE_LAYOUT = "(min-width: 1200px)";
+/** Darunter wird die Seitenleiste zum Burger-Menü. Muss zu styles.css passen. */
+const COMPACT_LAYOUT = "(max-width: 899px)";
 
 /** "new" = neuer Eintrag, Entry = bestehender, null = nichts ausgewählt. */
 type EditorState = Entry | "new" | null;
@@ -36,6 +39,7 @@ export function App({ services }: { services: AppServices }) {
   const { devlog, storage } = services;
   const { theme, setTheme } = useTheme();
   const wide = useMediaQuery(WIDE_LAYOUT);
+  const compact = useMediaQuery(COMPACT_LAYOUT);
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [allEntries, setAllEntries] = useState<Entry[]>([]);
@@ -126,27 +130,35 @@ export function App({ services }: { services: AppServices }) {
   const editing = editor !== null && editor !== "new" ? editor : null;
   const panelVisible = wide || editor !== null;
 
+  // Dieselben Daten für Seitenleiste (breit) und Burger-Menü (schmal).
+  const navigation: NavigationProps = {
+    storage,
+    theme,
+    onThemeChange: setTheme,
+    projects,
+    tags: tagCounts,
+    totalEntries: allEntries.length,
+    filter,
+    onFilter: setFilter,
+    onCreateProject: (name) => run(() => devlog.createProject(name)),
+    onDeleteProject: (project) => {
+      if (!window.confirm(`Projekt "${project.name}" löschen? Die Einträge bleiben erhalten.`)) return;
+      if (filter.projectId === project.id) setFilter({ ...filter, projectId: undefined });
+      void run(() => devlog.deleteProject(project.id));
+    },
+  };
+
   return (
-    <div className={`layout${panelVisible ? " layout--panel" : ""}`}>
-      <Sidebar
-        storage={storage}
-        theme={theme}
-        onThemeChange={setTheme}
-        projects={projects}
-        tags={tagCounts}
-        totalEntries={allEntries.length}
-        filter={filter}
-        onFilter={setFilter}
-        onCreateProject={(name) => run(() => devlog.createProject(name))}
-        onDeleteProject={(project) => {
-          if (!window.confirm(`Projekt "${project.name}" löschen? Die Einträge bleiben erhalten.`)) return;
-          if (filter.projectId === project.id) setFilter({ ...filter, projectId: undefined });
-          void run(() => devlog.deleteProject(project.id));
-        }}
-      />
+    <div className={`layout${panelVisible ? " layout--panel" : ""}${compact ? " layout--compact" : ""}`}>
+      {!compact && <Sidebar {...navigation} />}
 
       <main className="main">
         <header className="page-header">
+          {compact && (
+            <span className="brand__logo brand__logo--small" aria-hidden>
+              <NotePencilIcon size={18} weight="bold" />
+            </span>
+          )}
           <h1 className="page-title">Dashboard</h1>
           <label className="search">
             <MagnifyingGlassIcon size={18} />
@@ -159,10 +171,11 @@ export function App({ services }: { services: AppServices }) {
             />
           </label>
           {!wide && (
-            <button className="btn btn--primary" onClick={() => setEditor("new")}>
-              <PlusIcon size={18} weight="bold" /> Neuer Eintrag
+            <button className="btn btn--primary" onClick={() => setEditor("new")} aria-label="Neuer Eintrag">
+              <PlusIcon size={18} weight="bold" /> <span className="btn__label">Neuer Eintrag</span>
             </button>
           )}
+          {compact && <MobileMenu {...navigation} />}
         </header>
 
         {error && (

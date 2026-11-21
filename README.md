@@ -39,7 +39,8 @@ Der erste Start kompiliert die Rust-Abhängigkeiten und dauert einige Minuten. D
 | 1a | `@devlog/core`: Domain, Ports, Use Cases, Tests | ✅ |
 | 1b | `@devlog/storage-sqlite` + `apps/desktop`: Tauri + React | ✅ (Tauri-Start mit Rust noch zu prüfen) |
 | 1c | Design im Stil von DevTrack, Statistik-Karten, Aktivitäts-Heatmap, Serie | ✅ |
-| 1d | Markdown-Vorschau, Volltextsuche (FTS5), Menü für schmale Fenster | ⏳ als Nächstes |
+| 1d | Burger-Menü für schmale Fenster | ✅ |
+| 1e | Markdown-Vorschau, Volltextsuche (FTS5), Export/Backup | ⏳ als Nächstes |
 | 2 | `apps/sync-server` + `@devlog/sync`: Email-Login (Magic Link), verschlüsselter Abgleich | |
 | 3 | `apps/mobile`: Tauri Mobile, nutzt `core` und `sync` wieder | |
 | 4 | Extras: Git-Commits importieren, Statistiken, Serien | |

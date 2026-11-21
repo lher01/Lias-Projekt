@@ -326,8 +326,7 @@ h4 {
 .sidebar {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 24px;
+  gap: 36px;
   min-height: 0;
   padding: 24px 16px;
   border-right: 1px solid var(--border);
@@ -335,7 +334,16 @@ h4 {
   overflow-y: auto;
 }
 
-.sidebar__top {
+/* Gemeinsamer Inhalt von Seitenleiste und Burger-Menü */
+.navigation {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.navigation__top {
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -345,7 +353,6 @@ h4 {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 12px;
   padding: 0 8px;
 }
 
@@ -356,6 +363,11 @@ h4 {
   border-radius: 8px;
   background: var(--primary);
   color: #fff;
+}
+
+.brand__logo--small {
+  flex-shrink: 0;
+  padding: 7px;
 }
 
 .brand__name {
@@ -479,7 +491,7 @@ h4 {
   padding: 0 12px;
 }
 
-.sidebar__bottom {
+.navigation__bottom {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -1091,18 +1103,25 @@ button.heatmap__cell:hover {
   }
 }
 
-@media (max-width: 760px) {
+/* ---------- Kompakt: Seitenleiste wird zum Burger-Menü ---------- */
+@media (max-width: 899px) {
   .layout,
   .layout--panel {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .sidebar {
-    display: none;
+  .main {
+    padding: 20px 20px 32px;
   }
 
+  .page-header {
+    gap: 10px;
+  }
+}
+
+@media (max-width: 640px) {
   .main {
-    padding: 20px 16px 32px;
+    padding: 16px 16px 32px;
   }
 
   .page-header {
@@ -1110,8 +1129,157 @@ button.heatmap__cell:hover {
   }
 
   .search {
-    order: 3;
+    order: 5;
     width: 100%;
+  }
+
+  /* Nur noch das Plus-Icon, damit Titel, Button und Menü in eine Zeile passen */
+  .btn__label {
+    display: none;
+  }
+
+  .page-header .btn--primary {
+    padding: 10px 12px;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .stat__value {
+    font-size: 24px;
+  }
+}
+
+/* ---------- Burger-Menü (Glas-Bubble wie in DevTrack) ---------- */
+.menu-toggle {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border-solid);
+  border-radius: 12px;
+  background: var(--input);
+  color: var(--text-muted);
+}
+
+.menu-toggle[aria-expanded="true"] {
+  border-color: var(--primary);
+  color: var(--text-strong);
+}
+
+.menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgb(0 0 0 / 0.25);
+  animation: fade-in 0.25s ease;
+}
+
+.menu-backdrop--closing {
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+:root[data-theme="light"] .menu-backdrop {
+  background: rgb(0 0 0 / 0.12);
+}
+
+.menu-bubble {
+  position: fixed;
+  z-index: 61;
+  width: 290px;
+  max-width: calc(100vw - 32px);
+  padding: 12px;
+  overflow-y: auto;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 22px;
+  background: rgb(44 44 58 / 0.78);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  box-shadow:
+    0 20px 50px rgb(0 0 0 / 0.45),
+    0 2px 8px rgb(0 0 0 / 0.25);
+  transform-origin: top right;
+}
+
+:root[data-theme="light"] .menu-bubble {
+  border-color: rgb(0 0 0 / 0.06);
+  background: rgb(255 255 255 / 0.8);
+  box-shadow:
+    0 20px 50px rgb(0 0 0 / 0.18),
+    0 2px 8px rgb(0 0 0 / 0.08);
+}
+
+.menu-bubble--open {
+  animation: menu-wobble-in 0.65s ease-out both;
+}
+
+.menu-bubble--closing {
+  animation: menu-out 0.18s ease-in forwards;
+}
+
+/* Die Abschnitte erscheinen leicht versetzt nacheinander */
+.menu-bubble--open .navigation__top > *,
+.menu-bubble--open .navigation__bottom {
+  animation: menu-item-in 0.3s ease both;
+}
+.menu-bubble--open .navigation__top > :nth-child(1) {
+  animation-delay: 0.08s;
+}
+.menu-bubble--open .navigation__top > :nth-child(2) {
+  animation-delay: 0.12s;
+}
+.menu-bubble--open .navigation__top > :nth-child(3) {
+  animation-delay: 0.16s;
+}
+.menu-bubble--open .navigation__bottom {
+  animation-delay: 0.2s;
+}
+
+.menu-bubble .navigation__top {
+  gap: 18px;
+}
+
+.menu-bubble .navigation {
+  gap: 16px;
+}
+
+/* Aufklappen: federt nach unten, nach oben, dann ruhig (aus DevTrack) */
+@keyframes menu-wobble-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.6);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(8px) scale(1.02);
+  }
+  58% {
+    transform: translateY(-5px) scale(0.99);
+  }
+  74% {
+    transform: translateY(3px) scale(1);
+  }
+  88% {
+    transform: translateY(-1px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes menu-out {
+  to {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+@keyframes menu-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
   }
 }
 
@@ -1130,7 +1298,11 @@ button.heatmap__cell:hover {
 
 @media (prefers-reduced-motion: reduce) {
   .editor--overlay,
-  .editor--overlay .editor__card {
+  .editor--overlay .editor__card,
+  .menu-backdrop,
+  .menu-bubble--open,
+  .menu-bubble--open .navigation__top > *,
+  .menu-bubble--open .navigation__bottom {
     animation: none;
   }
 }

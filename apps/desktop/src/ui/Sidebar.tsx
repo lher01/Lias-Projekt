@@ -14,7 +14,7 @@ import type { StorageKind } from "../infrastructure/services";
 import type { Filter } from "./App";
 import type { Theme } from "./hooks";
 
-interface Props {
+export interface NavigationProps {
   storage: StorageKind;
   theme: Theme;
   onThemeChange: (theme: Theme) => void;
@@ -27,7 +27,33 @@ interface Props {
   onDeleteProject: (project: Project) => void;
 }
 
-export function Sidebar(props: Props) {
+/** Seitenleiste für breite Fenster. Der Inhalt wird mit dem Burger-Menü geteilt. */
+export function Sidebar(props: NavigationProps) {
+  return (
+    <aside className="sidebar">
+      <Brand />
+      <NavigationContent {...props} />
+    </aside>
+  );
+}
+
+export function Brand() {
+  return (
+    <div className="brand">
+      <span className="brand__logo">
+        <NotePencilIcon size={20} weight="bold" />
+      </span>
+      <span className="brand__name">DevLog</span>
+    </div>
+  );
+}
+
+/**
+ * Navigation, Projekte, Skills, Status und Theme-Schalter.
+ * Eine Komponente für zwei Orte (Seitenleiste und Burger-Menü):
+ * Änderungen müssen so nur an einer Stelle passieren.
+ */
+export function NavigationContent(props: NavigationProps) {
   const { storage, theme, onThemeChange, projects, tags, totalEntries, filter, onFilter } = props;
   const [newProject, setNewProject] = useState("");
 
@@ -40,15 +66,8 @@ export function Sidebar(props: Props) {
   const isDark = theme === "dark";
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar__top">
-        <div className="brand">
-          <span className="brand__logo">
-            <NotePencilIcon size={20} weight="bold" />
-          </span>
-          <span className="brand__name">DevLog</span>
-        </div>
-
+    <div className="navigation">
+      <div className="navigation__top">
         <nav className="nav">
           <button
             className={`nav-link${!filter.projectId ? " nav-link--active" : ""}`}
@@ -111,7 +130,7 @@ export function Sidebar(props: Props) {
         )}
       </div>
 
-      <div className="sidebar__bottom">
+      <div className="navigation__bottom">
         <div
           className={`storage-status storage-status--${storage}`}
           title={storage === "memory" ? "Im Browser gestartet: Änderungen gehen beim Neuladen verloren." : undefined}
@@ -134,6 +153,6 @@ export function Sidebar(props: Props) {
           </button>
         </div>
       </div>
-    </aside>
+    </div>
   );
 }
