@@ -2,6 +2,11 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { createServices } from "./infrastructure/services";
 import { App } from "./ui/App";
+// Schrift lokal gebündelt statt von Google Fonts: Die Desktop-App soll offline funktionieren.
+import "@fontsource/inter/400.css";
+import "@fontsource/inter/500.css";
+import "@fontsource/inter/600.css";
+import "@fontsource/inter/700.css";
 import "./ui/styles.css";
 
 const root = createRoot(document.getElementById("root")!);

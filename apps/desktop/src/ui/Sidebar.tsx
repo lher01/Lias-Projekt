@@ -1,10 +1,23 @@
 import type { Project } from "@devlog/core";
+import {
+  DatabaseIcon,
+  FolderSimpleIcon,
+  ListBulletsIcon,
+  MoonIcon,
+  NotePencilIcon,
+  PlusIcon,
+  SunIcon,
+  XIcon,
+} from "@phosphor-icons/react";
 import { useState, type FormEvent } from "react";
 import type { StorageKind } from "../infrastructure/services";
 import type { Filter } from "./App";
+import type { Theme } from "./hooks";
 
 interface Props {
   storage: StorageKind;
+  theme: Theme;
+  onThemeChange: (theme: Theme) => void;
   projects: Project[];
   tags: [string, number][];
   totalEntries: number;
@@ -14,84 +27,113 @@ interface Props {
   onDeleteProject: (project: Project) => void;
 }
 
-export function Sidebar({ storage, projects, tags, totalEntries, filter, onFilter, onCreateProject, onDeleteProject }: Props) {
+export function Sidebar(props: Props) {
+  const { storage, theme, onThemeChange, projects, tags, totalEntries, filter, onFilter } = props;
   const [newProject, setNewProject] = useState("");
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (!newProject.trim()) return;
-    if (await onCreateProject(newProject)) setNewProject("");
+    if (await props.onCreateProject(newProject)) setNewProject("");
   }
+
+  const isDark = theme === "dark";
 
   return (
     <aside className="sidebar">
-      <div className="brand">
-        <span className="brand__logo" aria-hidden>
-          {"{ }"}
-        </span>
-        <span className="brand__name">DevLog</span>
-      </div>
+      <div className="sidebar__top">
+        <div className="brand">
+          <span className="brand__logo">
+            <NotePencilIcon size={20} weight="bold" />
+          </span>
+          <span className="brand__name">DevLog</span>
+        </div>
 
-      <div
-        className={`storage storage--${storage}`}
-        title={storage === "memory" ? "Im Browser gestartet: Änderungen gehen beim Neuladen verloren." : undefined}
-      >
-        {storage === "sqlite" ? "● Lokal gespeichert (SQLite)" : "● Demo-Modus – nur im Speicher"}
-      </div>
+        <nav className="nav">
+          <button
+            className={`nav-link${!filter.projectId ? " nav-link--active" : ""}`}
+            onClick={() => onFilter({ ...filter, projectId: undefined })}
+          >
+            <ListBulletsIcon size={18} />
+            <span className="nav-link__label">Alle Einträge</span>
+            <span className="nav-link__count">{totalEntries}</span>
+          </button>
+        </nav>
 
-      <nav className="nav">
-        <button
-          className={`nav__item${!filter.projectId ? " nav__item--active" : ""}`}
-          onClick={() => onFilter({ ...filter, projectId: undefined })}
-        >
-          <span>Alle Einträge</span>
-          <span className="nav__count">{totalEntries}</span>
-        </button>
-      </nav>
-
-      <section className="sidebar__section">
-        <h2 className="sidebar__heading">Projekte</h2>
-        <ul className="project-list">
-          {projects.map((p) => (
-            <li key={p.id} className="project-list__row">
-              <button
-                className={`nav__item${filter.projectId === p.id ? " nav__item--active" : ""}`}
-                onClick={() => onFilter({ ...filter, projectId: p.id })}
-              >
-                <span className="truncate">{p.name}</span>
-              </button>
-              <button className="icon-button" onClick={() => onDeleteProject(p)} aria-label={`Projekt ${p.name} löschen`}>
-                ×
-              </button>
-            </li>
-          ))}
-        </ul>
-        <form className="inline-form" onSubmit={submit}>
-          <input
-            className="input input--small"
-            placeholder="Neues Projekt …"
-            value={newProject}
-            onChange={(e) => setNewProject(e.target.value)}
-          />
-        </form>
-      </section>
-
-      {tags.length > 0 && (
         <section className="sidebar__section">
-          <h2 className="sidebar__heading">Tags</h2>
-          <div className="tag-cloud">
-            {tags.map(([tag, count]) => (
-              <button
-                key={tag}
-                className={`chip${filter.tag === tag ? " chip--active" : ""}`}
-                onClick={() => onFilter({ ...filter, tag: filter.tag === tag ? undefined : tag })}
-              >
-                #{tag} <span className="chip__count">{count}</span>
-              </button>
+          <h2 className="sidebar__heading">Projekte</h2>
+          <ul className="nav">
+            {projects.map((p) => (
+              <li key={p.id} className="nav-row">
+                <button
+                  className={`nav-link${filter.projectId === p.id ? " nav-link--active" : ""}`}
+                  onClick={() => onFilter({ ...filter, projectId: p.id })}
+                >
+                  <FolderSimpleIcon size={18} />
+                  <span className="nav-link__label">{p.name}</span>
+                </button>
+                <button
+                  className="icon-btn nav-row__delete"
+                  onClick={() => props.onDeleteProject(p)}
+                  aria-label={`Projekt ${p.name} löschen`}
+                >
+                  <XIcon size={14} />
+                </button>
+              </li>
             ))}
-          </div>
+          </ul>
+          <form className="add-project" onSubmit={submit}>
+            <PlusIcon size={16} />
+            <input
+              placeholder="Neues Projekt"
+              aria-label="Neues Projekt"
+              value={newProject}
+              onChange={(e) => setNewProject(e.target.value)}
+            />
+          </form>
         </section>
-      )}
+
+        {tags.length > 0 && (
+          <section className="sidebar__section">
+            <h2 className="sidebar__heading">Skills</h2>
+            <div className="tag-cloud">
+              {tags.map(([tag, count]) => (
+                <button
+                  key={tag}
+                  className={`pill pill--blue pill--button${filter.tag === tag ? " pill--active" : ""}`}
+                  onClick={() => onFilter({ ...filter, tag: filter.tag === tag ? undefined : tag })}
+                >
+                  {tag} <span className="pill__count">{count}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+
+      <div className="sidebar__bottom">
+        <div
+          className={`storage-status storage-status--${storage}`}
+          title={storage === "memory" ? "Im Browser gestartet: Änderungen gehen beim Neuladen verloren." : undefined}
+        >
+          <DatabaseIcon size={18} />
+          <span>{storage === "sqlite" ? "Lokal gespeichert" : "Demo-Modus"}</span>
+        </div>
+        <div className="switch-row">
+          {isDark ? <MoonIcon size={18} /> : <SunIcon size={18} />}
+          <span>Dark Mode</span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={isDark}
+            aria-label="Dark Mode"
+            className="switch"
+            onClick={() => onThemeChange(isDark ? "light" : "dark")}
+          >
+            <span className="switch__thumb" />
+          </button>
+        </div>
+      </div>
     </aside>
   );
 }

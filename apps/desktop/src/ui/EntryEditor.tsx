@@ -1,9 +1,13 @@
 import { DomainError, MOODS, type Entry, type EntryDraft, type Mood, type Project, type ProjectId } from "@devlog/core";
+import { CaretDownIcon, LightbulbIcon, TrashIcon, XIcon } from "@phosphor-icons/react";
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { formatDayHeading, formatTime, MOOD_LABELS } from "./format";
+import { MoodIcon } from "./icons";
 
 interface Props {
   entry: Entry | null;
+  /** true = schmales Fenster: Panel liegt über dem Inhalt und kann geschlossen werden. */
+  overlay: boolean;
   projects: Project[];
   defaultProjectId: ProjectId | null;
   onSave: (draft: EntryDraft) => Promise<void>;
@@ -16,7 +20,7 @@ interface Props {
  * EntryDraft. Die eigentliche Validierung macht der Core: Die UI zeigt nur
  * dessen Fehlermeldung an, statt die Regeln doppelt zu implementieren.
  */
-export function EntryEditor({ entry, projects, defaultProjectId, onSave, onCancel, onDelete }: Props) {
+export function EntryEditor({ entry, overlay, projects, defaultProjectId, onSave, onCancel, onDelete }: Props) {
   const [title, setTitle] = useState(entry?.title ?? "");
   const [projectId, setProjectId] = useState<string>(entry?.projectId ?? defaultProjectId ?? "");
   const [tags, setTags] = useState(entry?.tags.join(", ") ?? "");
@@ -28,7 +32,10 @@ export function EntryEditor({ entry, projects, defaultProjectId, onSave, onCance
   const [saving, setSaving] = useState(false);
   const titleRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => titleRef.current?.focus(), []);
+  // Fokus nur, wenn das Panel bewusst geöffnet wurde (nicht beim dauerhaft sichtbaren Formular).
+  useEffect(() => {
+    if (entry || overlay) titleRef.current?.focus();
+  }, [entry, overlay]);
 
   // Projekt existiert evtl. nicht mehr (gelöscht) – dann trotzdem als Option anzeigen.
   const projectMissing = projectId !== "" && !projects.some((p) => p.id === projectId);
@@ -48,7 +55,6 @@ export function EntryEditor({ entry, projects, defaultProjectId, onSave, onCance
       });
     } catch (err) {
       setError(err instanceof DomainError ? err.message : `Speichern fehlgeschlagen: ${String(err)}`);
-    } finally {
       setSaving(false);
     }
   }
@@ -58,124 +64,128 @@ export function EntryEditor({ entry, projects, defaultProjectId, onSave, onCance
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) void submit();
   }
 
+  const showClose = overlay || entry !== null;
+
   return (
-    <aside className="editor" onKeyDown={onKeyDown} aria-label="Eintrag bearbeiten">
-      <form className="editor__form" onSubmit={submit}>
+    <aside className={`editor${overlay ? " editor--overlay" : ""}`} onKeyDown={onKeyDown} aria-label="Eintrag">
+      <form className="panel editor__card" onSubmit={submit}>
         <header className="editor__header">
-          <h2>{entry ? "Eintrag bearbeiten" : "Neuer Eintrag"}</h2>
-          {entry && (
-            <span className="editor__date">
-              {formatDayHeading(entry.createdAt)}, {formatTime(entry.createdAt)}
-            </span>
+          <div>
+            <h2 className="panel__title">{entry ? "Eintrag bearbeiten" : "Was hast du heute programmiert?"}</h2>
+            {entry && (
+              <p className="muted">
+                {formatDayHeading(entry.createdAt)}, {formatTime(entry.createdAt)}
+              </p>
+            )}
+          </div>
+          {showClose && (
+            <button type="button" className="icon-btn icon-btn--round" onClick={onCancel} aria-label="Schließen">
+              <XIcon size={16} />
+            </button>
           )}
         </header>
 
         {error && (
-          <div className="banner banner--error" role="alert">
+          <div className="alert" role="alert">
             {error}
           </div>
         )}
 
-        <label className="field">
-          <span className="field__label">Titel</span>
-          <input
-            ref={titleRef}
-            className="input"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Woran hast du gearbeitet?"
-          />
-        </label>
+        <input
+          ref={titleRef}
+          className="field"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Titel – woran hast du gearbeitet?"
+          aria-label="Titel"
+        />
 
-        <div className="field-row">
-          <label className="field">
-            <span className="field__label">Projekt</span>
-            <select className="input" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
-              <option value="">— kein Projekt —</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-              {projectMissing && <option value={projectId}>Gelöschtes Projekt</option>}
-            </select>
-          </label>
-          <label className="field field--narrow">
-            <span className="field__label">Dauer (min)</span>
-            <input
-              className="input"
-              type="number"
-              min={0}
-              max={1440}
-              step={5}
-              value={duration}
-              onChange={(e) => setDuration(e.target.value)}
-              placeholder="60"
-            />
-          </label>
-        </div>
+        <textarea
+          className="field field--area field--code"
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          placeholder={"Notizen (Markdown) – Code-Schnipsel gern mit ```"}
+          aria-label="Notizen"
+        />
 
-        <div className="field">
-          <span className="field__label">Wie lief es?</span>
-          <div className="mood-picker" role="radiogroup" aria-label="Stimmung">
-            {MOODS.map((m) => (
-              <button
-                type="button"
-                key={m}
-                role="radio"
-                aria-checked={mood === m}
-                className={`mood${mood === m ? " mood--active" : ""}`}
-                onClick={() => setMood(mood === m ? null : m)}
-              >
-                <span aria-hidden>{MOOD_LABELS[m].emoji}</span> {MOOD_LABELS[m].label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <label className="field">
-          <span className="field__label">Tags</span>
-          <input
-            className="input"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-            placeholder="typescript, bugfix, react"
-          />
-        </label>
-
-        <label className="field field--grow">
-          <span className="field__label">Notizen (Markdown)</span>
+        <div className="field-with-icon">
+          <LightbulbIcon size={18} />
           <textarea
-            className="input input--code"
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            placeholder={"Was hast du gemacht? Code-Schnipsel gern mit ```"}
-          />
-        </label>
-
-        <label className="field">
-          <span className="field__label">💡 Heute gelernt</span>
-          <textarea
-            className="input input--short"
+            className="field field--area field--short"
             value={learned}
             onChange={(e) => setLearned(e.target.value)}
-            placeholder="Eine Sache, die du mitnimmst"
+            placeholder="Heute gelernt …"
+            aria-label="Heute gelernt"
           />
-        </label>
+        </div>
+
+        <div className="select-wrap">
+          <select
+            className="field"
+            value={projectId}
+            onChange={(e) => setProjectId(e.target.value)}
+            aria-label="Projekt"
+          >
+            <option value="">Kein Projekt</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+            {projectMissing && <option value={projectId}>Gelöschtes Projekt</option>}
+          </select>
+          <CaretDownIcon size={16} />
+        </div>
+
+        <div className="field-row">
+          <input
+            className="field"
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+            placeholder="Skills: react, css …"
+            aria-label="Skills (Tags)"
+          />
+          <input
+            className="field field--narrow"
+            type="number"
+            min={0}
+            max={1440}
+            step={5}
+            value={duration}
+            onChange={(e) => setDuration(e.target.value)}
+            placeholder="Minuten"
+            aria-label="Dauer in Minuten"
+          />
+        </div>
+
+        <div className="mood-picker" role="radiogroup" aria-label="Wie lief es?">
+          {MOODS.map((m) => (
+            <button
+              type="button"
+              key={m}
+              role="radio"
+              aria-checked={mood === m}
+              className={`mood-option${mood === m ? " mood-option--active" : ""}`}
+              onClick={() => setMood(mood === m ? null : m)}
+              title={MOOD_LABELS[m].label}
+            >
+              <MoodIcon mood={m} size={20} weight={mood === m ? "fill" : "regular"} />
+              <span>{MOOD_LABELS[m].label}</span>
+            </button>
+          ))}
+        </div>
+
+        <button type="submit" className="btn btn--primary btn--block" disabled={saving}>
+          {saving ? "Speichert …" : "Eintrag speichern"}
+        </button>
 
         <footer className="editor__footer">
+          <span className="muted">Strg + Enter speichert</span>
           {onDelete && (
-            <button type="button" className="button button--danger" onClick={onDelete}>
-              Löschen
+            <button type="button" className="btn btn--danger-soft" onClick={onDelete}>
+              <TrashIcon size={16} /> Löschen
             </button>
           )}
-          <span className="editor__hint">Strg + Enter speichert</span>
-          <button type="button" className="button" onClick={onCancel}>
-            Abbrechen
-          </button>
-          <button type="submit" className="button button--primary" disabled={saving}>
-            {saving ? "Speichert …" : "Speichern"}
-          </button>
         </footer>
       </form>
     </aside>

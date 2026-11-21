@@ -1,9 +1,15 @@
 <!doctype html>
-<html lang="de">
+<html lang="de" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DevLog</title>
+    <script>
+      // Gespeichertes Theme sofort setzen, bevor React lädt – sonst blitzt kurz das falsche auf.
+      try {
+        if (localStorage.getItem("devlog_theme") === "light") document.documentElement.dataset.theme = "light";
+      } catch {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

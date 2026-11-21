@@ -14,6 +14,24 @@ export function dayKey(ts: Timestamp): number {
   return startOfDay(ts);
 }
 
+/** Beginn des folgenden Kalendertags (DST-sicher über setDate). */
+export function nextDay(dayStart: Timestamp): Timestamp {
+  const d = new Date(dayStart);
+  d.setDate(d.getDate() + 1);
+  return d.getTime();
+}
+
+const shortDate = new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+export function formatShortDate(ts: Timestamp): string {
+  return shortDate.format(ts);
+}
+
+export function formatHours(minutes: number): string {
+  if (minutes < 60) return `${minutes} min`;
+  const hours = minutes / 60;
+  return `${hours.toLocaleString("de-DE", { maximumFractionDigits: 1 })} h`;
+}
+
 export function formatDayHeading(ts: Timestamp, now = Date.now()): string {
   const diffDays = Math.round((startOfDay(now) - startOfDay(ts)) / 86_400_000);
   if (diffDays === 0) return "Heute";
@@ -32,10 +50,10 @@ export function formatDuration(minutes: number): string {
   return m === 0 ? `${h} h` : `${h} h ${m} min`;
 }
 
-export const MOOD_LABELS: Record<Mood, { emoji: string; label: string }> = {
-  great: { emoji: "😀", label: "Lief super" },
-  ok: { emoji: "😐", label: "Ging so" },
-  frustrated: { emoji: "😤", label: "Frustrierend" },
+export const MOOD_LABELS: Record<Mood, { label: string }> = {
+  great: { label: "Lief super" },
+  ok: { label: "Ging so" },
+  frustrated: { label: "Frustrierend" },
 };
 
 /** Kurze Vorschau: erste Zeilen ohne Code-Zäune. */
