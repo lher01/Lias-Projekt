@@ -14,13 +14,16 @@ npm run typecheck  # TypeScript prüfen
 
 ### Desktop-App starten
 
-**Im Browser (ohne Rust, Demo-Daten im Speicher)**: ideal, um an der Oberfläche zu arbeiten:
+**Im Browser (ohne Rust)**: Die Daten werden im `localStorage` des Browsers gespeichert und bleiben nach dem Neuladen erhalten:
 
 ```powershell
 npm run dev -w @devlog/desktop
 ```
 
-Dann http://localhost:1420 öffnen.
+Dann http://localhost:1420 öffnen. Mit http://localhost:1420/?demo startet die App stattdessen mit Beispieldaten, die nicht gespeichert werden.
+
+> Hinweis: Browser-Daten gehören zu genau diesem Browser und dieser Adresse. Ein anderer Browser sieht sie nicht,
+> und „Website-Daten löschen“ entfernt sie.
 
 **Als echte Desktop-App (Tauri, Daten in SQLite)**: braucht einmalig die Rust-Toolchain
 von https://rustup.rs (inklusive „Visual Studio C++ Build Tools“):
@@ -116,7 +119,8 @@ SqliteEntryRepository ──▶ SqlDriver (Interface) ◀── Tauri-Plugin-SQL
 
 ### Composition Root (`apps/desktop/src/infrastructure/services.ts`)
 
-Die einzige Stelle, die konkrete Adapter auswählt: SQLite in Tauri, In-Memory mit Demo-Daten im Browser.
+Die einzige Stelle, die konkrete Adapter auswählt: SQLite in Tauri, `localStorage` im Browser
+(`KeyValueEntryRepository`, besteht denselben Contract) und In-Memory mit Demo-Daten bei `?demo`.
 Die React-Komponenten kennen nur den `DevlogService`.
 
 ### Offene Architektur-Themen (für später)

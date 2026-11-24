@@ -9,4 +9,5 @@ export * from "./domain/stats";
 export type * from "./ports";
 export * from "./application/devlog-service";
 export * from "./adapters/in-memory";
+export * from "./adapters/key-value";
 export * from "./adapters/system";

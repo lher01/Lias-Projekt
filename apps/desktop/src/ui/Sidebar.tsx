@@ -14,6 +14,15 @@ import type { StorageKind } from "../infrastructure/services";
 import type { Filter } from "./App";
 import type { Theme } from "./hooks";
 
+const STORAGE_LABELS: Record<StorageKind, { label: string; hint: string }> = {
+  sqlite: { label: "Lokal gespeichert", hint: "Daten liegen in einer SQLite-Datei auf diesem PC." },
+  browser: {
+    label: "Im Browser gespeichert",
+    hint: "Daten liegen im Speicher dieses Browsers. Ein anderer Browser oder das Löschen der Website-Daten sieht sie nicht.",
+  },
+  memory: { label: "Nicht gespeichert", hint: "Demo-Modus: Änderungen gehen beim Neuladen verloren." },
+};
+
 export interface NavigationProps {
   storage: StorageKind;
   theme: Theme;
@@ -133,10 +142,10 @@ export function NavigationContent(props: NavigationProps) {
       <div className="navigation__bottom">
         <div
           className={`storage-status storage-status--${storage}`}
-          title={storage === "memory" ? "Im Browser gestartet: Änderungen gehen beim Neuladen verloren." : undefined}
+          title={STORAGE_LABELS[storage].hint}
         >
           <DatabaseIcon size={18} />
-          <span>{storage === "sqlite" ? "Lokal gespeichert" : "Demo-Modus"}</span>
+          <span>{STORAGE_LABELS[storage].label}</span>
         </div>
         <div className="switch-row">
           {isDark ? <MoonIcon size={18} /> : <SunIcon size={18} />}

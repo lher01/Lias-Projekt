@@ -513,7 +513,8 @@ h4 {
   color: var(--demo);
 }
 
-.storage-status--sqlite svg {
+.storage-status--sqlite svg,
+.storage-status--browser svg {
   color: var(--ok);
 }
 

@@ -30,6 +30,11 @@ export class InMemoryEntryRepository implements EntryRepository {
   async changedSince(since: Timestamp): Promise<Entry[]> {
     return [...this.items.values()].filter((e) => e.updatedAt > since);
   }
+
+  /** Nur für Adapter, die Änderungen zurückrollen müssen – fachlich wird nie hart gelöscht. */
+  async remove(id: EntryId): Promise<void> {
+    this.items.delete(id);
+  }
 }
 
 export class InMemoryProjectRepository implements ProjectRepository {
@@ -51,5 +56,10 @@ export class InMemoryProjectRepository implements ProjectRepository {
 
   async changedSince(since: Timestamp): Promise<Project[]> {
     return [...this.items.values()].filter((p) => p.updatedAt > since);
+  }
+
+  /** Nur für Adapter, die Änderungen zurückrollen müssen – fachlich wird nie hart gelöscht. */
+  async remove(id: ProjectId): Promise<void> {
+    this.items.delete(id);
   }
 }
